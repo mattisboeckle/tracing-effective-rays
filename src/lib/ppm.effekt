@@ -1,0 +1,70 @@
+module lib/ppm
+
+import io/filesystem
+import io/error
+
+record Pixel(r: Int, g: Int, b: Int)
+record Image(width: Int, height: Int, pixels: List[Pixel])
+
+def string(s: String): Unit / emit[Char] = s.each()
+def int(i: Int): Unit / emit[Char] = string(i.show)
+def space(): Unit / emit[Char] = do emit(' ')
+def newline(): Unit / emit[Char] = do emit('\n')
+
+def emit(pixel: Pixel): Unit / emit[Char] = pixel match {
+  case Pixel(r, g, b) => {
+    int(r)
+    space()
+    int(g)
+    space()
+    int(b)
+    newline()
+  }
+}
+
+def emit(image: Image): Unit / emit[Char] = image match {
+  case Image(width, height, pixels) => {
+    // Header
+    // RGB color in ASCII
+    string("P3")
+    newline()
+    // Width + Height of image
+    int(width)
+    space()
+    int(height)
+    newline()
+    // Max. color value
+    int(255)
+    newline()
+
+    pixels.foreach { p => emit(p) }
+  }
+}
+
+def collect(image: Image): String = {
+  string::collect { image.emit() }
+}
+
+def writeToFile(image: Image, path: String): Unit / Exception[IOError] = writeFile(path, collect(image))
+
+// Example image
+def gradient(width: Int, height: Int): Image = {
+
+  var pixels = Nil()
+
+  each(0, height) { j =>
+    each(0, width) { i =>
+      val r = i.toDouble / (width - 1).toDouble
+      val g = j.toDouble / (height - 1).toDouble
+      val b = 0.0
+
+      val ir = (255.999 * r).toInt
+      val ig = (255.999 * g).toInt
+      val ib = (255.999 * b).toInt
+
+      pixels = Cons(Pixel(ir, ig, ib), pixels)
+    }
+  }
+
+  Image(width, height, pixels)
+}
