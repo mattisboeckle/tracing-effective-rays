@@ -1,0 +1,55 @@
+module src/test/vec3_test
+
+import src/lib/vec3
+
+import test
+
+def vec3_tests() = suite("vec3") {
+  
+  test("neg") {
+    val a = Vec3(1.0, 2.0, 3.0)
+    assertEqual(a.neg(), Vec3(-1.0, -2.0, -3.0))
+  }
+
+  test("add") {
+    val a: Vec3 = zero()
+    val b = Vec3(1.0, 2.0, 3.0)
+    assertEqual(a.add(b), b)
+  }
+
+  test("sub") {
+    val a = Vec3(1.0, 2.0, 3.0)
+    val b = Vec3(3.0, 2.0, 1.0)
+    assertEqual(a.sub(b), Vec3(-2.0, 0.0, 2.0))
+  }
+
+  test("mul") {
+    val a = Vec3(1.0, 2.0, 3.0)
+    assertEqual(a.mul(2.0), Vec3(2.0, 4.0, 6.0))
+    assertEqual(a.mul(2), Vec3(2.0, 4.0, 6.0))
+  }
+
+  test("div") {
+    val a = Vec3(2.0, 4.0, 6.0)
+    assertEqual(a.div(2.0), Vec3(1.0, 2.0, 3.0))
+    assertEqual(a.div(2), Vec3(1.0, 2.0, 3.0))
+  }
+
+  test("length") {
+    val a = Vec3(2.0, 1.0, 2.0)
+    assertEqual(a.length, 3.0)
+  }
+
+  test("dot") {
+    val a = Vec3(1.0, 3.0, -5.0)
+    val b = Vec3(4.0, -2.0, -1.0)
+    assertEqual(a.dot(b), 3.0)
+  }
+
+  test("cross") {
+    val a = Vec3(1.0, 0.0, 0.0)
+    val b = Vec3(0.0, 1.0, 0.0)
+    assertEqual(a.cross(b), Vec3(0.0, 0.0, 1.0))
+  }
+
+}
