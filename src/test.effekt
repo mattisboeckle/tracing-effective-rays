@@ -3,8 +3,10 @@ module src/test
 import test
 import src/lib
 
+import src/test/vec3_test
+
 def main() = mainSuite("lib") {
-  test("Hello world") {
-    assertEqual(helloWorld(), "Hello, world!")
-  }
+  vec3_tests()
+
+  ()
 }
