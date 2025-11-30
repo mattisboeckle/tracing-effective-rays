@@ -14,25 +14,27 @@ def vec3_tests() = suite("vec3") {
   test("add") {
     val a: Vec3 = zero()
     val b = Vec3(1.0, 2.0, 3.0)
-    assertEqual(a.add(b), b)
+    assertEqual(a + b, b)
   }
 
   test("sub") {
     val a = Vec3(1.0, 2.0, 3.0)
     val b = Vec3(3.0, 2.0, 1.0)
-    assertEqual(a.sub(b), Vec3(-2.0, 0.0, 2.0))
+    assertEqual(a - b, Vec3(-2.0, 0.0, 2.0))
   }
 
   test("mul") {
     val a = Vec3(1.0, 2.0, 3.0)
-    assertEqual(a.mul(2.0), Vec3(2.0, 4.0, 6.0))
-    assertEqual(a.mul(2), Vec3(2.0, 4.0, 6.0))
+    assertEqual(a * 2.0, Vec3(2.0, 4.0, 6.0))
+    assertEqual(a * 2, Vec3(2.0, 4.0, 6.0))
+    assertEqual(2.0 * a, Vec3(2.0, 4.0, 6.0))
+    assertEqual(2 * a, Vec3(2.0, 4.0, 6.0))
   }
 
   test("div") {
     val a = Vec3(2.0, 4.0, 6.0)
-    assertEqual(a.div(2.0), Vec3(1.0, 2.0, 3.0))
-    assertEqual(a.div(2), Vec3(1.0, 2.0, 3.0))
+    assertEqual(a / 2.0, Vec3(1.0, 2.0, 3.0))
+    assertEqual(a / 2, Vec3(1.0, 2.0, 3.0))
   }
 
   test("length") {

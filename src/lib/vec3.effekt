@@ -1,27 +1,32 @@
+module lib/vec3
 
 record Vec3(x: Double, y: Double, z: Double)
+
+def infixAdd(a: Vec3, b: Vec3): Vec3 = (a, b) match {
+  case (Vec3(x1, y1, z1), Vec3(x2, y2, z2)) => Vec3(x1 + x2, y1 + y2, z1 + z2)
+}
+def infixSub(a: Vec3, b: Vec3): Vec3 = (a, b) match {
+  case (Vec3(x1, y1, z1), Vec3(x2, y2, z2)) => Vec3(x1 - x2, y1 - y2, z1 - z2)
+}
+def infixMul(v: Vec3, t: Double): Vec3 = v match {
+  case Vec3(x, y, z) => Vec3(x * t, y * t, z * t)
+}
+def infixMul(t: Double, v: Vec3): Vec3 = v * t
+def infixMul(t: Int, v: Vec3): Vec3 = v * t.toDouble
+def infixMul(v: Vec3, t: Int): Vec3 = v * t.toDouble
+
+def infixDiv(v: Vec3, t: Double): Vec3 = v * (1.0 / t)
+def infixDiv(v: Vec3, t: Int): Vec3 = v * (1.0 / t.toDouble)
+
+def infixEq(a: Vec3, b: Vec3): Bool = {
+  a.x == b.x && a.y == b.y && a.z == b.z
+}
 
 def zero(): Vec3 = Vec3(0.0, 0.0, 0.0)
 
 def neg(v: Vec3) = v match {
   case Vec3(x, y, z) => Vec3(x.neg, y.neg, z.neg)
 }
-
-def add(a: Vec3, b: Vec3): Vec3 = (a, b) match {
-  case (Vec3(x1, y1, z1), Vec3(x2, y2, z2)) => Vec3(x1 + x2, y1 + y2, z1 + z2)
-}
-
-def sub(a: Vec3, b: Vec3): Vec3 = (a, b) match {
-  case (Vec3(x1, y1, z1), Vec3(x2, y2, z2)) => Vec3(x1 - x2, y1 - y2, z1 - z2)
-}
-
-def mul(v: Vec3, t: Double) = v match {
-  case Vec3(x, y, z) => Vec3(x * t, y * t, z * t)
-}
-def mul(v: Vec3, t: Int) = v.mul(t.toDouble)
-
-def div(v: Vec3, t: Double) = v.mul(1.0 / t)
-def div(v: Vec3, t: Int) = v.div(t.toDouble)
 
 def length_squared(v: Vec3) = v match {
   case Vec3(x, y, z) => x*x + y*y + z*z
@@ -39,15 +44,8 @@ def cross(a: Vec3, b: Vec3): Vec3 = (a, b) match {
          x1 * y2 - y1 * x2)
 }
 
-def unit_vector(v: Vec3): Vec3 = v.div(v.length)
+def unit_vector(v: Vec3): Vec3 = v / v.length
 
 def show(v: Vec3): String = v match {
   case Vec3(x, y, z) => "(" ++ x.show ++ ", " ++ y.show ++ ", " ++ z.show ++ ")"
-}
-
-
-def t() = {
-  val v = zero()
-
-  println(v.x)
 }
