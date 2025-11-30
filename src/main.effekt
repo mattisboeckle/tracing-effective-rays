@@ -1,5 +1,66 @@
 module main // must be named same as the file!
 
-import src/lib
+import src/lib/ppm
+import src/lib/vec3
+import src/lib/ray
 
-def main(): Unit = println(helloWorld())
+import io/error
+
+def main(): Unit = {
+  with on[IOError].panic
+  // gradient(256, 256).writeToFile("out.ppm")
+
+  // Image
+  val aspect_ratio = 16.0 / 9.0
+  val image_width = 400
+
+  val image_height = (image_width.toDouble / aspect_ratio).toInt
+
+  // Camera
+  
+  val focal_length = 1.0
+  val viewport_height = 2.0
+  val viewport_width = viewport_height * (image_width.toDouble / image_height.toDouble)
+  val camera_center = Vec3(0.0, 0.0, 0.0)
+
+  // Viewport
+  val viewport_u = Vec3(viewport_width, 0.0, 0.0)
+  val viewport_v = Vec3(0.0, viewport_height.neg, 0.0)
+  val pixel_delta_u = viewport_u / image_width
+  val pixel_delta_v = viewport_v / image_height
+  val viewport_upper_left = camera_center - Vec3(0.0, 0.0, focal_length) - viewport_u / 2 - viewport_v / 2
+
+  val pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v)
+
+  def calc_ray(i: Int, j: Int) =  {
+    val pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v)
+    val ray_direction = pixel_center - camera_center
+    Ray(camera_center, ray_direction)
+  }
+  
+  render(image_width, image_height) { calc_ray } { ray::gradient }.writeToFile("out.ppm")
+
+  ()
+}
+
+// args: width & height of image
+// bargs:
+//    ray: function to construct ray from pixel indices
+//    handler: function that returns the correct color for a given ray
+// returns: Image constructed by 'ray' with color by 'handler'
+def render(width: Int, height: Int) { ray: (Int, Int) => Ray } { handler: { () => Vec3 / { color } } => Vec3 }: Image = {
+
+  var pixels = Nil()
+
+  each(0, height) { j =>
+    println("Lines remaining: " ++ (height - j).show)
+    each(0, width) { i =>
+      val color = handler {
+        do color(ray(i, j))
+      }
+      pixels = Cons(fromVec3(color), pixels)
+    }
+  }
+
+  Image(width, height, pixels.reverse)
+}
