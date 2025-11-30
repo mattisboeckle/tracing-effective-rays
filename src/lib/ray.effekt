@@ -10,19 +10,34 @@ def at(ray: Ray, r: Double): Vec3 = {
 
 effect color(r: Ray): Color
 
-def black() { prog: () => Color / color } = {
+def withColorCalc { colorCalc: Ray => Color } { prog: () => Color / color } = {
   try { prog() }
-  with color { r => 
-    resume(vec3::zero())
-  }
+  with color { r => resume(colorCalc(r)) }
 }
 
-def gradient() { prog: () => Color / color } = {
-  try { prog() }
-  with color { r => 
-    val unit_direction = r.direction.unit_vector
-    val blendFactor = 0.5 * (unit_direction.y + 1.0)
-    val ret = (1.0 - blendFactor) * Vec3(1.0, 1.0, 1.0) + blendFactor * Vec3(0.5, 0.7, 1.0)
-    resume(ret)
+def black(r: Ray): Color = {
+  vec3::zero()
+}
+
+def gradient(r: Ray): Color = {
+  val unit_direction = r.direction.unit_vector
+  val blendFactor = 0.5 * (unit_direction.y + 1.0)
+  (1.0 - blendFactor) * Vec3(1.0, 1.0, 1.0) + blendFactor * Vec3(0.5, 0.7, 1.0)
+}
+
+def hit_sphere(center: Vec3, radius: Double, r: Ray): Bool = {
+  val oc = center - r.origin
+  val a = vec3::dot(r.direction, r.direction)
+  val b = -2.0 * vec3::dot(r.direction, oc)
+  val c = vec3::dot(oc, oc) - radius * radius
+  val discriminant = b * b - 4.0 * a * c
+  discriminant >= 0.0
+}
+
+def one_sphere(r: Ray): Color = {
+  if (hit_sphere(Vec3(0.0, 0.0, -1.0), 0.5, r)) {
+    Vec3(1.0, 0.0, 0.0)
+  } else {
+    gradient(r)
   }
 }

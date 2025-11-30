@@ -38,7 +38,7 @@ def main(): Unit = {
     Ray(camera_center, ray_direction)
   }
   
-  render(image_width, image_height) { calc_ray } { ray::gradient }.writeToFile("out.ppm")
+  render(image_width, image_height) { calc_ray } { ray::one_sphere }.writeToFile("out.ppm")
 
   ()
 }
@@ -48,16 +48,14 @@ def main(): Unit = {
 //    ray: function to construct ray from pixel indices
 //    handler: function that returns the correct color for a given ray
 // returns: Image constructed by 'ray' with color by 'handler'
-def render(width: Int, height: Int) { ray: (Int, Int) => Ray } { handler: { () => Vec3 / { color } } => Vec3 }: Image = {
+def render(width: Int, height: Int) { ray: (Int, Int) => Ray } { colorCalc: Ray => Color }: Image = {
 
   var pixels = Nil()
 
   each(0, height) { j =>
     println("Lines remaining: " ++ (height - j).show)
     each(0, width) { i =>
-      val color = handler {
-        do color(ray(i, j))
-      }
+      val color = withColorCalc { colorCalc } { do color(ray(i, j)) }
       pixels = Cons(fromVec3(color), pixels)
     }
   }
