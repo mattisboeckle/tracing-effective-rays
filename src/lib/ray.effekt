@@ -1,0 +1,28 @@
+import src/lib/vec3
+
+record Ray(origin: Vec3, direction: Vec3)
+
+type Color = Vec3
+
+def at(ray: Ray, r: Double): Vec3 = {
+  ray.origin + r * ray.direction
+}
+
+effect color(r: Ray): Color
+
+def black() { prog: () => Color / color } = {
+  try { prog() }
+  with color { r => 
+    resume(vec3::zero())
+  }
+}
+
+def gradient() { prog: () => Color / color } = {
+  try { prog() }
+  with color { r => 
+    val unit_direction = r.direction.unit_vector
+    val blendFactor = 0.5 * (unit_direction.y + 1.0)
+    val ret = (1.0 - blendFactor) * Vec3(1.0, 1.0, 1.0) + blendFactor * Vec3(0.5, 0.7, 1.0)
+    resume(ret)
+  }
+}
