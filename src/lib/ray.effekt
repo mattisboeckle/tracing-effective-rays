@@ -15,6 +15,11 @@ record Interval(min: Double, max: Double)
 
 def outside(value: Double, interval: Interval): Bool = value <= interval.min || interval.max <= value
 def inside(value: Double, interval: Interval): Bool = value.outside(interval).not()
+def clamp(value: Double, interval: Interval): Double = {
+  if (value < interval.min)       interval.min
+  else if (value > interval.max)  interval.max
+  else                            value
+}
 
 interface Hittable {
   def hit(r: Ray, interval: Interval): Option[HitRecord] 

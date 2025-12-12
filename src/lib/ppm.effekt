@@ -1,6 +1,7 @@
 module lib/ppm
 
 import src/lib/vec3
+import src/lib/ray
 
 import io/filesystem
 import io/error
@@ -65,9 +66,10 @@ def gradient(width: Int, height: Int): Image = {
       val g = j.toDouble / (height - 1).toDouble
       val b = 0.0
 
-      val ir = (255.999 * r).toInt
-      val ig = (255.999 * g).toInt
-      val ib = (255.999 * b).toInt
+      val intensity = Interval(0.000, 0.999)
+      val ir = (256.0 * r.clamp(intensity)).toInt
+      val ig = (256.0 * g.clamp(intensity)).toInt
+      val ib = (256.0 * b.clamp(intensity)).toInt
 
       pixels = Cons(Pixel(ir, ig, ib), pixels)
     }
