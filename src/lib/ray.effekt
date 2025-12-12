@@ -8,13 +8,17 @@ def at(ray: Ray, r: Double): Vec3 = {
   ray.origin + r * ray.direction
 }
 
+def show(ray: Ray): String = {
+  "Ray(" ++ ray.origin.show ++ ", " ++ ray.direction.show ++ ")"
+}
+
 effect color(r: Ray): Color
 
 record HitRecord(point: Vec3, normal: Vec3, t: Double)
 record Interval(min: Double, max: Double)
 
-def outside(value: Double, interval: Interval): Bool = value <= interval.min || interval.max <= value
-def inside(value: Double, interval: Interval): Bool = value.outside(interval).not()
+def outside(value: Double, interval: Interval): Bool = value.inside(interval).not() 
+def inside(value: Double, interval: Interval): Bool =  interval.min < value && value < interval.max
 def clamp(value: Double, interval: Interval): Double = {
   if (value < interval.min)       interval.min
   else if (value > interval.max)  interval.max

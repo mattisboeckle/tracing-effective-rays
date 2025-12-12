@@ -14,7 +14,7 @@ def main(): Unit = {
   val sphere2 = Sphere(Vec3(0.0, -100.5, -1.0), 100.0)
   val world = [hittable(sphere1), hittable(sphere2)]
 
-  val camera = camera(400, 16.0 / 9.0)
+  val camera = camera(400, 16.0 / 9.0, 10)
   camera.render { r => ray::hittables(world, r) }.writeToFile("out.ppm")
 
   ()

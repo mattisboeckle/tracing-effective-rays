@@ -1,15 +1,19 @@
 module src/lib/camera
 
+import random
+
 import src/lib/vec3
 import src/lib/ray
 import src/lib/ppm
 
-record Camera(width: Int, height: Int, aspect_ratio: Double, center: Vec3, pixel00: Vec3, pixel_du: Vec3, pixel_dv: Vec3)
+record Camera(width: Int, height: Int, aspect_ratio: Double, samples_per_pixel: Int, pixel_sample_scale: Double, center: Vec3, pixel00: Vec3, pixel_du: Vec3, pixel_dv: Vec3)
 
-def camera(width: Int, aspect_ratio: Double): Camera = {
+def camera(width: Int, aspect_ratio: Double, samples_per_pixel: Int): Camera = {
   // Image
   val image_width = width
   val image_height = (image_width.toDouble / aspect_ratio).toInt
+
+  val pixel_sample_scale = 1.0 / samples_per_pixel.toDouble
 
   // Camera
   
@@ -27,7 +31,7 @@ def camera(width: Int, aspect_ratio: Double): Camera = {
 
   val pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v)
 
-  Camera(image_width, image_height, aspect_ratio, camera_center, pixel00_loc, pixel_delta_u, pixel_delta_v)
+  Camera(image_width, image_height, aspect_ratio, samples_per_pixel, pixel_sample_scale, camera_center, pixel00_loc, pixel_delta_u, pixel_delta_v)
 }
 
 // args: width & height of image
@@ -38,16 +42,34 @@ def render(camera: Camera) { colorCalc: Ray => Color }: Image = {
 
   var pixels = Nil()
 
-  each(0, camera.height) { j =>
-    println("Lines remaining: " ++ (camera.height - j).show)
-    each(0, camera.width) { i =>
-      val pixel_center = camera.pixel00 + (i * camera.pixel_du) + (j * camera.pixel_dv)
-      val ray_direction = pixel_center - camera.center
-      val r = Ray(camera.center, ray_direction)
-      val color = withColorCalc { colorCalc } { do color(r) }
-      pixels = Cons(fromVec3(color), pixels)
+  minstd(1024) {
+    each(0, camera.height) { j =>
+      println("Lines remaining: " ++ (camera.height - j).show)
+      each(0, camera.width) { i =>
+        var pixel_color = vec3::zero()
+        each(0, camera.samples_per_pixel) { sample => 
+          val r = camera.get_ray(i, j)
+          pixel_color = pixel_color + withColorCalc { colorCalc } { do color(r) }
+        }
+        pixels = Cons(fromVec3(pixel_color * camera.pixel_sample_scale), pixels)
+      }
     }
   }
 
   Image(camera.width, camera.height, pixels.reverse)
+}
+
+def get_ray(camera: Camera, i: Int, j: Int): Ray / random = {
+  val offset = sample_square()
+  val pixel_sample = camera.pixel00 
+                      + ((i.toDouble + offset.x) * camera.pixel_du)
+                      + ((j.toDouble + offset.y) * camera.pixel_dv)
+  val ray_origin = camera.center
+  val ray_direction = pixel_sample - ray_origin
+
+  Ray(ray_origin, ray_direction)
+}
+
+def sample_square(): Vec3 / random = {
+  Vec3(randomDouble() - 0.5, randomDouble() - 0.5, 0.0)
 }
