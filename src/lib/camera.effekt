@@ -6,9 +6,12 @@ import src/lib/vec3
 import src/lib/ray
 import src/lib/ppm
 
-record Camera(width: Int, height: Int, aspect_ratio: Double, samples_per_pixel: Int, pixel_sample_scale: Double, center: Vec3, pixel00: Vec3, pixel_du: Vec3, pixel_dv: Vec3)
+record Camera(
+  width: Int, height: Int, aspect_ratio: Double, 
+  samples_per_pixel: Int, pixel_sample_scale: Double, max_depth: Int,
+  center: Vec3, pixel00: Vec3, pixel_du: Vec3, pixel_dv: Vec3)
 
-def camera(width: Int, aspect_ratio: Double, samples_per_pixel: Int): Camera = {
+def camera(width: Int, aspect_ratio: Double, samples_per_pixel: Int, max_depth: Int): Camera = {
   // Image
   val image_width = width
   val image_height = (image_width.toDouble / aspect_ratio).toInt
@@ -31,7 +34,9 @@ def camera(width: Int, aspect_ratio: Double, samples_per_pixel: Int): Camera = {
 
   val pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v)
 
-  Camera(image_width, image_height, aspect_ratio, samples_per_pixel, pixel_sample_scale, camera_center, pixel00_loc, pixel_delta_u, pixel_delta_v)
+  Camera(image_width, image_height, aspect_ratio, 
+    samples_per_pixel, pixel_sample_scale, max_depth,
+    camera_center, pixel00_loc, pixel_delta_u, pixel_delta_v)
 }
 
 // args: width & height of image

@@ -1,5 +1,7 @@
 module main // must be named same as the file!
 
+import random
+
 import src/lib/ppm
 import src/lib/vec3
 import src/lib/ray
@@ -14,8 +16,9 @@ def main(): Unit = {
   val sphere2 = Sphere(Vec3(0.0, -100.5, -1.0), 100.0)
   val world = [hittable(sphere1), hittable(sphere2)]
 
-  val camera = camera(400, 16.0 / 9.0, 10)
-  camera.render { r => ray::hittables(world, r) }.writeToFile("out.ppm")
+  with minstd(128)
+  val camera = camera(400, 16.0 / 9.0, 10, 5)
+  camera.render { r => ray::hitables_diffuse(world, r, camera.max_depth) }.writeToFile("out.ppm")
 
   ()
 }

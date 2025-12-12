@@ -1,5 +1,7 @@
 module lib/vec3
 
+import random
+
 record Vec3(x: Double, y: Double, z: Double)
 
 def infixAdd(a: Vec3, b: Vec3): Vec3 = (a, b) match {
@@ -48,4 +50,41 @@ def unit_vector(v: Vec3): Vec3 = v / v.length
 
 def show(v: Vec3): String = v match {
   case Vec3(x, y, z) => "(" ++ x.show ++ ", " ++ y.show ++ ", " ++ z.show ++ ")"
+}
+
+def random_double(min: Double, max: Double): Double / random = {
+  min * (max - min) * randomDouble()
+}
+
+def random(): Vec3 / random = {
+  Vec3(randomDouble(), randomDouble(), randomDouble())
+}
+
+def random(min: Double, max: Double): Vec3 / random = {
+  Vec3(random_double(min, max), random_double(min, max), random_double(min, max))
+}
+
+def random_unit_vector(): Vec3 / random = {
+  var ret = zero() 
+  loop { {l} =>
+    val p = random(-1.0, 1.0)
+    val lensq = p.length_squared()
+    // The book uses 1e-160 here for epsilon instead
+    // The right is a hack, because LLVM can't do Double Lte, but only Lt
+    val epsilon = 0.00000001
+    if (epsilon < lensq && lensq < 1.0 + epsilon) {
+      ret = p / sqrt(lensq)
+      l.break()
+    }
+  }
+  ret
+}
+
+def random_on_hemisphere(normal: Vec3): Vec3 / random = {
+  val on_unit_sphere = random_unit_vector()
+  if (dot(on_unit_sphere, normal) > 0.0) {
+    on_unit_sphere
+  } else {
+    on_unit_sphere.neg
+  }
 }

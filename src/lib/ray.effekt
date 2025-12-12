@@ -1,5 +1,7 @@
 import src/lib/vec3
 
+import random
+
 record Ray(origin: Vec3, direction: Vec3)
 
 type Color = Vec3
@@ -135,11 +137,28 @@ def one_sphere(r: Ray): Color = {
   }
 }
 
-def hittables(hittables: List[Hittable at {}], r: Ray): Color = {
+def hitables_default(hittables: List[Hittable at {}], r: Ray): Color = {
   val world = hittable(hittables)
   val opt_rec = world.hit(r, Interval(0.0, 10000.0))
   opt_rec match {
     case None() => gradient(r)
     case Some(rec) => 0.5 * (rec.normal + Vec3(1.0, 1.0, 1.0))
+  }
+}
+
+def hitables_diffuse(hittables: List[Hittable at {}], r: Ray, depth: Int): Color / random = {
+  if (depth <= 0) {
+    vec3::zero()
+  } else {
+    val world = hittable(hittables)
+    val opt_rec = world.hit(r, Interval(0.001, 10000.0))
+    opt_rec match {
+      case None() => gradient(r)
+      case Some(rec) => {
+        // val direction = vec3::random_on_hemisphere(rec.normal)
+        val direction = rec.normal + vec3::random_unit_vector()
+        0.5 * hitables_diffuse(hittables, Ray(rec.point, direction), depth - 1)
+      }
+    }
   }
 }
