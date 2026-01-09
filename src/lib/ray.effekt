@@ -16,7 +16,7 @@ def show(ray: Ray): String = {
 
 effect color(r: Ray): Color
 
-record HitRecord(point: Vec3, normal: Vec3, t: Double)
+record HitRecord(point: Vec3, normal: Vec3, t: Double, material: Material)
 record Interval(min: Double, max: Double)
 
 def outside(value: Double, interval: Interval): Bool = value.inside(interval).not() 
@@ -27,21 +27,40 @@ def clamp(value: Double, interval: Interval): Double = {
   else                            value
 }
 
-interface Material {
-  // Should produce a scattered ray and how much color was attenuated, based on the Material
-  def scatter(r_in: Ray, hit_record: HitRecord): Option[(Vec3, Ray)]
+type Material {
+  Lambertian(albedo: Vec3)
+  Metal(albedo: Vec3)
+}
+
+// Should produce a scattered ray and how much color was attenuated, based on the Material
+def scatter(material: Material, r_in: Ray, hit_record: HitRecord): Option[(Vec3, Ray)] / random = material match {
+  case Lambertian(albedo) => {
+    var scatter_direction = hit_record.normal + random_unit_vector()
+
+    if (scatter_direction.near_zero())
+      scatter_direction = hit_record.normal
+
+    val scattered = Ray(hit_record.point, scatter_direction)
+    Some((albedo, scattered))
+  }
+  case Metal(albedo) => {
+    val reflected = reflect(r_in.direction, hit_record.normal)
+    val scattered = Ray(hit_record.point, reflected)
+
+    Some((albedo, scattered))
+  }
 }
 
 interface Hittable {
-  def hit(r: Ray, interval: Interval, material: Material at {}): Option[HitRecord] 
+  def hit(r: Ray, interval: Interval): Option[HitRecord] 
 }
 
 record Sphere(center: Vec3, radius: Double)
 
-def hittable(sphere: Sphere): Hittable at {} = sphere match {
+def hittable(sphere: Sphere, material: Material): (Hittable at {}, Material) = sphere match {
   case Sphere(center, radius) => {
-    box new Hittable {
-      def hit(r: Ray, interval: Interval, material) = {
+    (box new Hittable {
+      def hit(r: Ray, interval: Interval) = {
         val oc = center - r.origin
         val a = r.direction.length_squared()
         val h = vec3::dot(r.direction, oc)
@@ -77,28 +96,32 @@ def hittable(sphere: Sphere): Hittable at {} = sphere match {
               outward_normal.neg
             }
 
-            Some(HitRecord(rec_p, rec_n, rec_t))
+            Some(HitRecord(rec_p, rec_n, rec_t, material))
           }
         }
       }
-    }
+    }, material)
   }
 }
 
-def hittable(list: List[Hittable at {}]): Hittable at {} = {
+def hittable(list: List[(Hittable at {}, Material)]): Hittable at {} = {
   box new Hittable {
-    def hit(r: Ray, interval: Interval, material) = {
-      var temp_rec = HitRecord(zero(), zero(), 0.0)
+    def hit(r: Ray, interval: Interval) = {
+      var temp_rec = HitRecord(zero(), zero(), 0.0, Lambertian(zero()))
       var hit_anything = false
       var closest_so_far = interval.max
 
-      list.foreach { obj => {
-        obj.hit(r, Interval(interval.min, closest_so_far), material) match {
-          case None() => ()
-          case Some(hit_record) => {
-            hit_anything = true
-            closest_so_far = hit_record.t
-            temp_rec = hit_record
+      list.foreach { pair => {
+        pair match {
+          case (hittable, material) => {
+            hittable.hit(r, Interval(interval.min, closest_so_far)) match {
+              case None() => ()
+              case Some(hit_record) => {
+                hit_anything = true
+                closest_so_far = hit_record.t
+                temp_rec = hit_record
+              }
+            }
           }
         }
       }}
@@ -128,8 +151,9 @@ def gradient(r: Ray): Color = {
 }
 
 def one_sphere(r: Ray): Color / random = {
-  val sphere = hittable(Sphere(Vec3(0.0, 0.0, -1.0), 0.5))
-  val hit_record = sphere.hit(r, Interval(0.0, 10000.0), lambertian(Vec3(0.5, 0.7, 1.0)))
+  val material = Lambertian(Vec3(0.5, 0.7, 1.0))
+  val (sphere, _) = hittable(Sphere(Vec3(0.0, 0.0, -1.0), 0.5), material)
+  val hit_record = sphere.hit(r, Interval(0.0, 10000.0))
   val t = hit_record match {
     case None() => -1.0
     case Some(rec) => rec.t
@@ -142,38 +166,33 @@ def one_sphere(r: Ray): Color / random = {
   }
 }
 
-def hitables_default(hittables: List[Hittable at {}], r: Ray): Color = {
+def hitables_default(hittables: List[(Hittable at {}, Material)], r: Ray): Color = {
   val world = hittable(hittables)
-  val opt_rec = world.hit(r, Interval(0.0, 10000.0), <>)
+  val opt_rec = world.hit(r, Interval(0.0, 10000.0))
   opt_rec match {
     case None() => gradient(r)
     case Some(rec) => 0.5 * (rec.normal + Vec3(1.0, 1.0, 1.0))
   }
 }
 
-def hitables_diffuse(hittables: List[Hittable at {}], r: Ray, depth: Int): Color / random = {
+def hitables_diffuse(hittables: List[(Hittable at {}, Material)], r: Ray, depth: Int): Color / random = {
   if (depth <= 0) {
     vec3::zero()
   } else {
     val world = hittable(hittables)
-    val opt_rec = world.hit(r, Interval(0.001, 10000.0), <>)
+    val opt_rec = world.hit(r, Interval(0.001, 10000.0))
     opt_rec match {
       case None() => gradient(r)
       case Some(rec) => {
+        val opt_scatter = rec.material.scatter(r, rec)
+        opt_scatter match {
+          case Some((attenuation, scattered)) => attenuation * hitables_diffuse(hittables, scattered, depth - 1)
+          case None() => Vec3(0.0, 0.0, 0.0)
+        }
         // val direction = vec3::random_on_hemisphere(rec.normal)
-        val direction = rec.normal + vec3::random_unit_vector()
-        0.5 * hitables_diffuse(hittables, Ray(rec.point, direction), depth - 1)
+        // val direction = rec.normal + vec3::random_unit_vector()
+        // 0.5 * hitables_diffuse(hittables, Ray(rec.point, direction), depth - 1)
       }
     }
   }
 }
-
-def lambertian(albedo: Vec3): Material at {} = 
-  box new Material {
-    def scatter(r_in: Ray, hit_record: HitRecord) = {
-      val scatter_direction = hit_record.normal + random_unit_vector()
-      val scattered = Ray(hit_record.point, scatter_direction)
-      val attenuation = albedo
-      Some((attenuation, scattered))
-    }
-  }

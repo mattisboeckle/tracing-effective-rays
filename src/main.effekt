@@ -12,12 +12,28 @@ import io/error
 def main(): Unit = {
   with on[IOError].panic
   
-  val sphere1 = Sphere(Vec3(0.0, 0.0, -1.0), 0.5)
-  val sphere2 = Sphere(Vec3(0.0, -100.5, -1.0), 100.0)
-  val world = [hittable(sphere1), hittable(sphere2)]
+  val material_ground = Lambertian(Vec3(0.8, 0.8, 0.0))
+  val material_center = Lambertian(Vec3(0.1, 0.2, 0.5))
+  val material_left = Metal(Vec3(0.8, 0.8, 0.8))
+  val material_right = Metal(Vec3(0.8, 0.6, 0.2))
+
+  val sphere_ground = Sphere(Vec3(0.0, -100.5, -1.0), 100.0)
+  val sphere_center = Sphere(Vec3(0.0, 0.0, -1.2), 0.5)
+  val sphere_left   = Sphere(Vec3(-1.0, 0.0, -1.0), 0.5)
+  val sphere_right  = Sphere(Vec3(1.0, 0.0, -1.0), 0.5)
+  val world = [
+    hittable(sphere_ground, material_ground), 
+    hittable(sphere_center, material_center), 
+    hittable(sphere_left, material_left), 
+    hittable(sphere_right, material_right)
+  ]
 
   with minstd(128)
-  val camera = camera(400, 16.0 / 9.0, 10, 5)
+  val width = 400
+  val aspect_ratio = 16.0 / 9.0
+  val samples_per_pixel = 100
+  val max_depth = 50
+  val camera = camera(width, aspect_ratio, samples_per_pixel, max_depth)
   camera.render { r => ray::hitables_diffuse(world, r, camera.max_depth) }.writeToFile("out.ppm")
 
   ()

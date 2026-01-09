@@ -17,6 +17,8 @@ def infixMul(t: Double, v: Vec3): Vec3 = v * t
 def infixMul(t: Int, v: Vec3): Vec3 = v * t.toDouble
 def infixMul(v: Vec3, t: Int): Vec3 = v * t.toDouble
 
+def infixMul(v: Vec3, u: Vec3): Vec3 = Vec3(v.x * u.x, v.y * u.y, v.z * u.z)
+
 def infixDiv(v: Vec3, t: Double): Vec3 = v * (1.0 / t)
 def infixDiv(v: Vec3, t: Int): Vec3 = v * (1.0 / t.toDouble)
 
@@ -31,7 +33,7 @@ def neg(v: Vec3) = v match {
 }
 
 def length_squared(v: Vec3) = v match {
-  case Vec3(x, y, z) => x*x + y*y + z*z
+  case Vec3(x, y, z) => x * x + y * y + z * z
 }
 def length(v: Vec3) = sqrt(v.length_squared)
 
@@ -50,6 +52,15 @@ def unit_vector(v: Vec3): Vec3 = v / v.length
 
 def show(v: Vec3): String = v match {
   case Vec3(x, y, z) => "(" ++ x.show ++ ", " ++ y.show ++ ", " ++ z.show ++ ")"
+}
+
+def near_zero(v: Vec3): Bool = {
+  val epsilon = 0.000000001
+  abs(v.x) < epsilon && abs(v.y) < epsilon && abs(v.z) < epsilon
+}
+
+def reflect(v: Vec3, n: Vec3): Vec3 = {
+  v - 2.0 * dot(v, n) * n
 }
 
 def random_double(min: Double, max: Double): Double / random = {
