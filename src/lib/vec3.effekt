@@ -63,6 +63,13 @@ def reflect(v: Vec3, n: Vec3): Vec3 = {
   v - 2.0 * dot(v, n) * n
 }
 
+def refract(uv: Vec3, n: Vec3, etai_over_etat: Double): Vec3 = {
+  val cos_theta = min(dot(uv.neg(), n), 1.0)
+  val r_out_perp = etai_over_etat * (uv * cos_theta * n)
+  val r_out_parallel = sqrt(abs(1.0 - r_out_perp.length_squared())).neg() * n
+  r_out_perp + r_out_parallel
+}
+
 def random_double(min: Double, max: Double): Double / random = {
   min * (max - min) * randomDouble()
 }

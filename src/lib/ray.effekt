@@ -16,7 +16,7 @@ def show(ray: Ray): String = {
 
 effect color(r: Ray): Color
 
-record HitRecord(point: Vec3, normal: Vec3, t: Double, material: Material)
+record HitRecord(point: Vec3, normal: Vec3, t: Double, material: Material, front_face: Bool)
 record Interval(min: Double, max: Double)
 
 def outside(value: Double, interval: Interval): Bool = value.inside(interval).not() 
@@ -30,6 +30,13 @@ def clamp(value: Double, interval: Interval): Double = {
 type Material {
   Lambertian(albedo: Vec3)
   Metal(albedo: Vec3)
+  Dielectric(refraction_index: Double)
+}
+
+def reflectance(cosine: Double, refraction_index: Double): Double = {
+  var r0 = (1.0 - refraction_index) / (1.0 + refraction_index)
+  r0 = r0 * r0
+  r0 + (1.0 - r0) * pow(1.0 - cosine, 5)
 }
 
 // Should produce a scattered ray and how much color was attenuated, based on the Material
@@ -48,6 +55,28 @@ def scatter(material: Material, r_in: Ray, hit_record: HitRecord): Option[(Vec3,
     val scattered = Ray(hit_record.point, reflected)
 
     Some((albedo, scattered))
+  }
+  case Dielectric(refraction_index) => {
+    val attenuation = Vec3(1.0, 1.0, 1.0)
+    val ri = if (hit_record.front_face) 1.0 / refraction_index else refraction_index
+
+    val unit_direction = unit_vector(r_in.direction)
+
+    val cos_theta = min(dot(unit_direction.neg(), hit_record.normal), 1.0)
+    val sin_theta = sqrt(1.0 - cos_theta * cos_theta)
+
+    val cannot_refract = ri * sin_theta > 1.0
+    var direction = vec3::zero()
+
+    if (cannot_refract || reflectance(cos_theta, ri) > randomDouble())
+      direction = reflect(unit_direction, hit_record.normal)
+    else
+      direction = refract(unit_direction, hit_record.normal, ri)
+
+    val refracted = refract(unit_direction, direction, ri)
+
+    val scattered = Ray(hit_record.point, refracted)
+    Some((attenuation, scattered))
   }
 }
 
@@ -90,13 +119,13 @@ def hittable(sphere: Sphere, material: Material): (Hittable at {}, Material) = s
             val outward_normal = (rec_p - center) / radius
 
             // Detect surface side
-            val rec_n = if (dot(r.direction, outward_normal) < 0.0) {
-              outward_normal
+            val (rec_n, front_face) = if (dot(r.direction, outward_normal) < 0.0) {
+              (outward_normal, true)
             } else {
-              outward_normal.neg
+              (outward_normal.neg, false)
             }
 
-            Some(HitRecord(rec_p, rec_n, rec_t, material))
+            Some(HitRecord(rec_p, rec_n, rec_t, material, front_face))
           }
         }
       }
@@ -107,7 +136,7 @@ def hittable(sphere: Sphere, material: Material): (Hittable at {}, Material) = s
 def hittable(list: List[(Hittable at {}, Material)]): Hittable at {} = {
   box new Hittable {
     def hit(r: Ray, interval: Interval) = {
-      var temp_rec = HitRecord(zero(), zero(), 0.0, Lambertian(zero()))
+      var temp_rec = HitRecord(zero(), zero(), 0.0, Lambertian(zero()), true)
       var hit_anything = false
       var closest_so_far = interval.max
 

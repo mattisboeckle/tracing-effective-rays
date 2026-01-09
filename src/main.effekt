@@ -14,18 +14,22 @@ def main(): Unit = {
   
   val material_ground = Lambertian(Vec3(0.8, 0.8, 0.0))
   val material_center = Lambertian(Vec3(0.1, 0.2, 0.5))
-  val material_left = Metal(Vec3(0.8, 0.8, 0.8))
+  val material_left = Dielectric(1.5)
+  val material_bubble = Dielectric(1.0 / 1.5)
   val material_right = Metal(Vec3(0.8, 0.6, 0.2))
 
   val sphere_ground = Sphere(Vec3(0.0, -100.5, -1.0), 100.0)
   val sphere_center = Sphere(Vec3(0.0, 0.0, -1.2), 0.5)
   val sphere_left   = Sphere(Vec3(-1.0, 0.0, -1.0), 0.5)
+  val sphere_bubble = Sphere(Vec3(-1.0, 0.0, -1.0), 0.4)
   val sphere_right  = Sphere(Vec3(1.0, 0.0, -1.0), 0.5)
+
   val world = [
     hittable(sphere_ground, material_ground), 
     hittable(sphere_center, material_center), 
-    hittable(sphere_left, material_left), 
-    hittable(sphere_right, material_right)
+    hittable(sphere_left, material_left),
+    hittable(sphere_bubble, material_bubble),
+    hittable(sphere_right, material_right),
   ]
 
   with minstd(128)
