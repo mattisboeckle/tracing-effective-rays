@@ -9,9 +9,10 @@ import src/lib/ppm
 record Camera(
   width: Int, height: Int, aspect_ratio: Double, 
   samples_per_pixel: Int, pixel_sample_scale: Double, max_depth: Int,
-  center: Vec3, pixel00: Vec3, pixel_du: Vec3, pixel_dv: Vec3)
+  center: Vec3, pixel00: Vec3, pixel_du: Vec3, pixel_dv: Vec3,
+  u: Vec3, v: Vec3, w: Vec3)
 
-def camera(width: Int, aspect_ratio: Double, samples_per_pixel: Int, max_depth: Int): Camera = {
+def camera(width: Int, fov: Double, lookfrom: Vec3, lookat: Vec3, vup: Vec3, aspect_ratio: Double, samples_per_pixel: Int, max_depth: Int): Camera = {
   // Image
   val image_width = width
   val image_height = (image_width.toDouble / aspect_ratio).toInt
@@ -19,24 +20,32 @@ def camera(width: Int, aspect_ratio: Double, samples_per_pixel: Int, max_depth: 
   val pixel_sample_scale = 1.0 / samples_per_pixel.toDouble
 
   // Camera
+  val center = lookfrom
   
-  val focal_length = 1.0
-  val viewport_height = 2.0
+  val focal_length = (lookfrom - lookat).length()
+  val theta = degrees_to_radians(fov)
+  val h = tan(theta / 2.0)
+  val viewport_height = 2.0 * h * focal_length
   val viewport_width = viewport_height * (image_width.toDouble / image_height.toDouble)
-  val camera_center = Vec3(0.0, 0.0, 0.0)
+
+  val w = unit_vector(lookfrom - lookat)
+  val u = unit_vector(cross(vup, w))
+  val v = cross(w, u)
 
   // Viewport
-  val viewport_u = Vec3(viewport_width, 0.0, 0.0)
-  val viewport_v = Vec3(0.0, viewport_height.neg, 0.0)
+  val viewport_u = viewport_width * u
+  val viewport_v = viewport_height * v.neg
   val pixel_delta_u = viewport_u / image_width
   val pixel_delta_v = viewport_v / image_height
-  val viewport_upper_left = camera_center - Vec3(0.0, 0.0, focal_length) - viewport_u / 2 - viewport_v / 2
+  val viewport_upper_left = center - (focal_length * w) - viewport_u / 2 - viewport_v / 2
 
   val pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v)
 
   Camera(image_width, image_height, aspect_ratio, 
     samples_per_pixel, pixel_sample_scale, max_depth,
-    camera_center, pixel00_loc, pixel_delta_u, pixel_delta_v)
+    center, pixel00_loc, pixel_delta_u, pixel_delta_v,
+    u, v, w  
+  )
 }
 
 // args: width & height of image
@@ -62,6 +71,10 @@ def render(camera: Camera) { colorCalc: Ray => Color }: Image = {
   }
 
   Image(camera.width, camera.height, pixels.reverse)
+}
+
+def degrees_to_radians(deg: Double): Double = {
+  deg * PI / 180.0
 }
 
 def get_ray(camera: Camera, i: Int, j: Int): Ray / random = {
