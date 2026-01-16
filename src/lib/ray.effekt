@@ -222,9 +222,6 @@ def hitables_diffuse(hittables: List[(Hittable at {}, Material)], r: Ray, depth:
           case Some((attenuation, scattered)) => attenuation * hitables_diffuse(hittables, scattered, depth - 1)
           case None() => Vec3(0.0, 0.0, 0.0)
         }
-        // val direction = vec3::random_on_hemisphere(rec.normal)
-        // val direction = rec.normal + vec3::random_unit_vector()
-        // 0.5 * hitables_diffuse(hittables, Ray(rec.point, direction), depth - 1)
       }
     }
   }

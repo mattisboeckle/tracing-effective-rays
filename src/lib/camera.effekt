@@ -1,6 +1,7 @@
 module src/lib/camera
 
 import random
+import bench
 
 import src/lib/vec3
 import src/lib/ray
@@ -58,15 +59,18 @@ def render(camera: Camera) { colorCalc: Ray => Color }: Image = {
 
   minstd(1024) {
     each(0, camera.height) { j =>
-      println("Lines remaining: " ++ (camera.height - j).show)
-      each(0, camera.width) { i =>
-        var pixel_color = vec3::zero()
-        each(0, camera.samples_per_pixel) { sample => 
-          val r = camera.get_ray(i, j)
-          pixel_color = pixel_color + withColorCalc { colorCalc } { do color(r) }
+      val line_time = timed {
+        each(0, camera.width) { i =>
+          var pixel_color = vec3::zero()
+          each(0, camera.samples_per_pixel) { sample => 
+            val r = camera.get_ray(i, j)
+            pixel_color = pixel_color + withColorCalc { colorCalc } { do color(r) }
+          }
+          pixels = Cons(fromVec3(pixel_color * camera.pixel_sample_scale), pixels)
         }
-        pixels = Cons(fromVec3(pixel_color * camera.pixel_sample_scale), pixels)
       }
+      
+      println("Line took: " ++ formatMs(line_time) ++ ", remaining " ++ (camera.height - j).show)
     }
   }
 
