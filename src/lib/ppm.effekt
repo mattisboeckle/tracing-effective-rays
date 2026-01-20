@@ -1,25 +1,15 @@
 module lib/ppm
 
+import src/lib/common
 import src/lib/vec3
-import src/lib/ray
 
 import io/filesystem
 import io/error
-
-record Pixel(r: Int, g: Int, b: Int)
-record Image(width: Int, height: Int, pixels: List[Pixel])
 
 def string(s: String): Unit / emit[Char] = s.each()
 def int(i: Int): Unit / emit[Char] = string(i.show)
 def space(): Unit / emit[Char] = do emit(' ')
 def newline(): Unit / emit[Char] = do emit('\n')
-
-def linear_to_gamma(linear_component: Double): Double = {
-  if (linear_component > 0.0) 
-    sqrt(linear_component)
-  else 
-    0.0
-}
 
 // Converts vector with values between 0.0 and 1.0 to color space 0 to 255
 def fromVec3(v: Vec3): Pixel = {

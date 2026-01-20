@@ -3,6 +3,7 @@ module src/lib/camera
 import random
 import bench
 
+import src/lib/common
 import src/lib/vec3
 import src/lib/ray
 import src/lib/ppm

@@ -1,0 +1,21 @@
+module lib/common
+
+record Pixel(r: Int, g: Int, b: Int)
+record Image(width: Int, height: Int, pixels: List[Pixel])
+
+def linear_to_gamma(linear_component: Double): Double = {
+  if (linear_component > 0.0) 
+    sqrt(linear_component)
+  else 
+    0.0
+}
+
+record Interval(min: Double, max: Double)
+
+def outside(value: Double, interval: Interval): Bool = value.inside(interval).not() 
+def inside(value: Double, interval: Interval): Bool =  interval.min < value && value < interval.max
+def clamp(value: Double, interval: Interval): Double = {
+  if (value < interval.min)       interval.min
+  else if (value > interval.max)  interval.max
+  else                            value
+}
