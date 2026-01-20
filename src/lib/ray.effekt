@@ -76,87 +76,80 @@ def scatter(material: Material, r_in: Ray, hit_record: HitRecord): Option[(Vec3,
   }
 }
 
-interface Hittable {
-  def hit(r: Ray, interval: Interval): Option[HitRecord] 
+type Hittable {
+  Sphere(material: Material, center: Vec3, radius: Double)
 }
 
-record Sphere(center: Vec3, radius: Double)
+effect hit(rec: HitRecord): Color
+effect miss(ray: Ray): Color
 
-def hittable(sphere: Sphere, material: Material): (Hittable at {}, Material) = sphere match {
-  case Sphere(center, radius) => {
-    (box new Hittable {
-      def hit(r: Ray, interval: Interval) = {
-        val oc = center - r.origin
-        val a = r.direction.length_squared()
-        val h = vec3::dot(r.direction, oc)
-        val c = oc.length_squared() - radius * radius
-        val discriminant = h * h - a * c
+def calculateHit(hittable: Hittable, r: Ray, interval: Interval): Color / { hit, miss } = hittable match {
+  case Sphere(material, center, radius) => {
+    val oc = center - r.origin
+    val a = r.direction.length_squared()
+    val h = vec3::dot(r.direction, oc)
+    val c = oc.length_squared() - radius * radius
+    val discriminant = h * h - a * c
         
-        if (discriminant < 0.0) {
-          None()
-        } else {
-          var isNone = false
-          val sqrtd = sqrt(discriminant)
-          var root = (h - sqrtd) / a
+    if (discriminant < 0.0) {
+      do miss(r)
+    } else {
+      var isSome = true
+      val sqrtd = sqrt(discriminant)
+      var root = (h - sqrtd) / a
 
-          if (root.outside(interval)) {
-            root = (h + sqrtd) / a
-            if (root.outside(interval)) {
-              isNone = true
-            }
-          }
-
-          if (isNone) {
-            None()
-          } else {
-            val rec_t = root
-            val rec_p = r.at(rec_t)
-
-            val outward_normal = (rec_p - center) / radius
-
-            // Detect surface side
-            val (rec_n, front_face) = if (dot(r.direction, outward_normal) < 0.0) {
-              (outward_normal, true)
-            } else {
-              (outward_normal.neg, false)
-            }
-
-            Some(HitRecord(rec_p, rec_n, rec_t, material, front_face))
-          }
+      if (root.outside(interval)) {
+        root = (h + sqrtd) / a
+        if (root.outside(interval)) {
+          isSome = false
         }
       }
-    }, material)
+
+      if (isSome) {
+        val rec_t = root
+        val rec_p = r.at(rec_t)
+
+        val outward_normal = (rec_p - center) / radius
+
+        // Detect surface side
+        val (rec_n, front_face) = if (dot(r.direction, outward_normal) < 0.0) {
+          (outward_normal, true)
+        } else {
+          (outward_normal.neg, false)
+        }
+
+        do hit(HitRecord(rec_p, rec_n, rec_t, material, front_face))
+      } else {
+        do miss(r)
+      }
+    }
   }
 }
 
-def hittable(list: List[(Hittable at {}, Material)]): Hittable at {} = {
-  box new Hittable {
-    def hit(r: Ray, interval: Interval) = {
-      var temp_rec = HitRecord(zero(), zero(), 0.0, Lambertian(zero()), true)
-      var hit_anything = false
-      var closest_so_far = interval.max
+def calculateHits(list: List[Hittable], r: Ray, interval: Interval): Color / { hit, miss } = {
+  var temp_rec = HitRecord(vec3::zero(), vec3::zero(), 0.0, Lambertian(vec3::zero()), true)
+  var hit_anything = false
+  var closest_so_far = interval.max
 
-      list.foreach { pair => {
-        pair match {
-          case (hittable, material) => {
-            hittable.hit(r, Interval(interval.min, closest_so_far)) match {
-              case None() => ()
-              case Some(hit_record) => {
-                hit_anything = true
-                closest_so_far = hit_record.t
-                temp_rec = hit_record
-              }
-            }
-          }
-        }
-      }}
-
-      if (hit_anything) {
-        Some(temp_rec)
-      } else {
-        None()
-      }
+  list.foreach { hittable => {
+    try { 
+      hittable.calculateHit(r, Interval(interval.min, closest_so_far))
+      ()
     }
+    with hit { rec => 
+      hit_anything = true
+      closest_so_far = rec.t
+      temp_rec = rec
+    }
+    with miss { ray =>
+      ()
+    }
+  }}
+
+  if (hit_anything) {
+    do hit(temp_rec)
+  } else {
+    do miss(r)
   }
 }
 
@@ -177,44 +170,36 @@ def gradient(r: Ray): Color = {
 
 def one_sphere(r: Ray): Color / random = {
   val material = Lambertian(Vec3(0.5, 0.7, 1.0))
-  val (sphere, _) = hittable(Sphere(Vec3(0.0, 0.0, -1.0), 0.5), material)
-  val hit_record = sphere.hit(r, Interval(0.0, 10000.0))
-  val t = hit_record match {
-    case None() => -1.0
-    case Some(rec) => rec.t
+  val sphere = Sphere(material, Vec3(0.0, 0.0, -1.0), 0.5)
+  try sphere.calculateHit(r, Interval(0.0, 10000.0))
+  with hit { rec => 
+    if (rec.t > 0.0) {
+      val n = (r.at(rec.t) - Vec3(0.0, 0.0, -1.0)).unit_vector
+      0.5 * Vec3(n.x + 1.0, n.y + 1.0, n.z + 1.0)
+    } else {
+      gradient(r)
+    }
   }
-  if (t > 0.0) {
-    val n = (r.at(t) - Vec3(0.0, 0.0, -1.0)).unit_vector
-    0.5 * Vec3(n.x + 1.0, n.y + 1.0, n.z + 1.0)
-  } else {
-    gradient(r)
-  }
+  with miss { _ => gradient(r) }
+  
 }
 
-def hitables_default(hittables: List[(Hittable at {}, Material)], r: Ray): Color = {
-  val world = hittable(hittables)
-  val opt_rec = world.hit(r, Interval(0.0, 10000.0))
-  opt_rec match {
-    case None() => gradient(r)
-    case Some(rec) => 0.5 * (rec.normal + Vec3(1.0, 1.0, 1.0))
-  }
-}
-
-def hitables_diffuse(hittables: List[(Hittable at {}, Material)], r: Ray, depth: Int): Color / random = {
+def hitables_diffuse(world: List[Hittable], r: Ray, depth: Int): Color / random = {
   if (depth <= 0) {
     vec3::zero()
   } else {
-    val world = hittable(hittables)
-    val opt_rec = world.hit(r, Interval(0.001, 10000.0))
-    opt_rec match {
-      case None() => gradient(r)
-      case Some(rec) => {
-        val opt_scatter = rec.material.scatter(r, rec)
-        opt_scatter match {
-          case Some((attenuation, scattered)) => attenuation * hitables_diffuse(hittables, scattered, depth - 1)
-          case None() => Vec3(0.0, 0.0, 0.0)
-        }
+    try {
+      world.calculateHits(r, Interval(0.001, 10000.0))
+    }
+    with hit { rec => 
+      val opt_scatter = rec.material.scatter(r, rec)
+      opt_scatter match {
+        case Some((attenuation, scattered)) => attenuation * hitables_diffuse(world, scattered, depth - 1)
+        case None() => Vec3(0.0, 0.0, 0.0)
       }
+    }
+    with miss { ray =>
+      gradient(r)
     }
   }
 }

@@ -9,53 +9,49 @@ import src/lib/camera
 
 import io/error
 
-def dielectric_scene(): List[(Hittable at {}, Material)] = {
+def dielectric_scene(): List[Hittable] = {
   val material_ground = Lambertian(Vec3(0.8, 0.8, 0.0))
   val material_center = Lambertian(Vec3(0.1, 0.2, 0.5))
   val material_left = Dielectric(1.5)
   val material_bubble = Dielectric(1.0 / 1.5)
   val material_right = Metal(Vec3(0.8, 0.6, 0.2), 1.0)
 
-  val sphere_ground = Sphere(Vec3(0.0, -100.5, -1.0), 100.0)
-  val sphere_center = Sphere(Vec3(0.0, 0.0, -1.2), 0.5)
-  val sphere_left   = Sphere(Vec3(-1.0, 0.0, -1.0), 0.5)
-  val sphere_bubble = Sphere(Vec3(-1.0, 0.0, -1.0), 0.4)
-  val sphere_right  = Sphere(Vec3(1.0, 0.0, -1.0), 0.5)
+  val sphere_ground = Sphere(material_ground, Vec3(0.0, -100.5, -1.0), 100.0)
+  val sphere_center = Sphere(material_center, Vec3(0.0, 0.0, -1.2), 0.5)
+  val sphere_left   = Sphere(material_left, Vec3(-1.0, 0.0, -1.0), 0.5)
+  val sphere_bubble = Sphere(material_bubble, Vec3(-1.0, 0.0, -1.0), 0.4)
+  val sphere_right  = Sphere(material_right, Vec3(1.0, 0.0, -1.0), 0.5)
 
-  val world = [
-    hittable(sphere_ground, material_ground), 
-    hittable(sphere_center, material_center), 
-    hittable(sphere_left, material_left),
-    hittable(sphere_bubble, material_bubble),
-    hittable(sphere_right, material_right),
+  [
+    sphere_ground, 
+    sphere_center, 
+    sphere_left,
+    sphere_bubble,
+    sphere_right,
   ]
-
-  world
 }
 
-def camera_test_scene(): List[(Hittable at {}, Material)] = {
+def camera_test_scene(): List[Hittable] = {
   val R = cos(PI / 4.0)
 
   val material_left = Lambertian(Vec3(0.0, 0.0, 1.0))
   val material_right = Lambertian(Vec3(1.0, 0.0, 0.0))
 
-  val sphere_left = Sphere(Vec3(R.neg(), 0.0, -1.0), R)
-  val sphere_right = Sphere(Vec3(R, 0.0, -1.0), R)
+  val sphere_left = Sphere(material_left, Vec3(R.neg(), 0.0, -1.0), R)
+  val sphere_right = Sphere(material_right, Vec3(R, 0.0, -1.0), R)
 
-  val world = [
-    hittable(sphere_left, material_left),
-    hittable(sphere_right, material_right)
+  [
+    sphere_left,
+    sphere_right
   ]
-
-  world
 }
 
-def final_scene(): List[(Hittable at {}, Material)] / random = {
-  var world: List[(Hittable at {}, Material)] = Nil()
+def final_scene(): List[Hittable] / random = {
+  var world: List[Hittable] = Nil()
   
   val material_ground = Lambertian(Vec3(0.5, 0.5, 0.5))
 
-  world = Cons(hittable(Sphere(Vec3(0.0, -1000.0, 0.0), 1000.0), material_ground), world)
+  world = Cons(Sphere(material_ground, Vec3(0.0, -1000.0, 0.0), 1000.0), world)
 
   effekt::each(-11, 11) { a =>
     effekt::each(-11, 11) { b =>
@@ -67,30 +63,30 @@ def final_scene(): List[(Hittable at {}, Material)] / random = {
           // diffuse
           val albedo = vec3::random() * vec3::random()
           val mat = Lambertian(albedo)
-          world = Cons(hittable(Sphere(center, 0.2), mat), world)
+          world = Cons(Sphere(mat, center, 0.2), world)
         } else if (choose_mat < 0.95) {
           // metal
           val albedo = vec3::random(0.5, 1.0)
           val fuzz = random_double(0.0, 0.5)
           val mat = Metal(albedo, fuzz)
-          world = Cons(hittable(Sphere(center, 0.2), mat), world)
+          world = Cons(Sphere(mat, center, 0.2), world)
         } else {
           // glass
           val mat = Dielectric(1.5)
-          world = Cons(hittable(Sphere(center, 0.2), mat), world)
+          world = Cons(Sphere(mat, center, 0.2), world)
         }
       }
     }
   }
 
   val mat1 = Dielectric(1.5)
-  world = Cons(hittable(Sphere(Vec3(0.0, 1.0, 0.0), 1.0), mat1) , world)
+  world = Cons(Sphere(mat1, Vec3(0.0, 1.0, 0.0), 1.0), world)
 
   val mat2 = Lambertian(Vec3(0.4, 0.2, 0.1))
-  world = Cons(hittable(Sphere(Vec3(-4.0, 1.0, 0.0), 1.0), mat2) , world)
+  world = Cons(Sphere(mat2, Vec3(-4.0, 1.0, 0.0), 1.0), world)
 
   val mat3 = Metal(Vec3(0.7, 0.6, 0.5), 0.0)
-  world = Cons(hittable(Sphere(Vec3(4.0, 1.0, 0.0), 1.0), mat3) , world)
+  world = Cons(Sphere(mat3, Vec3(4.0, 1.0, 0.0), 1.0), world)
 
   world
 }
@@ -103,14 +99,14 @@ def main(): Unit = {
   // val world = camera_test_scene()
   val world = final_scene()
 
-  val width = 1200
+  val width = 600
   val fov = 20.0
   val lookfrom = Vec3(13.0, 2.0, 3.0)
   val lookat = Vec3(0.0, 0.0, 0.0)
   val vup = Vec3(0.0, 1.0, 0.0)
   val aspect_ratio = 16.0 / 9.0
-  val samples_per_pixel = 500
-  val max_depth = 50
+  val samples_per_pixel = 100
+  val max_depth = 10
   val camera = camera(width, fov, lookfrom, lookat, vup, aspect_ratio, samples_per_pixel, max_depth)
   camera.render { r => ray::hitables_diffuse(world, r, camera.max_depth) }.writeToFile("out.ppm")
 
