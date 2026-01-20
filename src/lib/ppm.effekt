@@ -50,11 +50,9 @@ def emit(image: Image): Unit / emit[Char] = image match {
   }
 }
 
-def collect(image: Image): String = {
-  string::collect { image.emit() }
+def writeToFile(image: Image, path: String): Unit / Exception[IOError] = {
+  writeFileUTF8(path) { image.emit() }
 }
-
-def writeToFile(image: Image, path: String): Unit / Exception[IOError] = writeFile(path, collect(image))
 
 // Example image
 def gradient(width: Int, height: Int): Image = {
