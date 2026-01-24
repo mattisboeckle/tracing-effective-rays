@@ -3,6 +3,10 @@ module lib/common
 record Pixel(r: Int, g: Int, b: Int)
 record Image(width: Int, height: Int, pixels: List[Pixel])
 
+def show(pixel: Pixel): String = pixel match {
+  case Pixel(r, g, b) => "(" ++ r.show ++ ", " ++ g.show ++ ", " ++ b.show ++ ")"
+}
+
 def linear_to_gamma(linear_component: Double): Double = {
   if (linear_component > 0.0) 
     sqrt(linear_component)

@@ -2,6 +2,7 @@ module main // must be named same as the file!
 
 import random
 
+import src/lib/common
 import src/lib/ppm
 import src/lib/vec3
 import src/lib/ray
@@ -108,7 +109,9 @@ def main(): Unit = {
   val samples_per_pixel = 100
   val max_depth = 10
   val camera = camera(width, fov, lookfrom, lookat, vup, aspect_ratio, samples_per_pixel, max_depth)
-  camera.render { r => ray::hitables_diffuse(world, r, camera.max_depth) }.writeToFile("out.ppm")
+
+  val image = camera.diffuseImage(world)
+  image.writeToFile("out.ppm")
 
   ()
 }

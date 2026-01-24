@@ -50,32 +50,34 @@ def camera(width: Int, fov: Double, lookfrom: Vec3, lookat: Vec3, vup: Vec3, asp
   )
 }
 
-// args: width & height of image
-// bargs:
-//    colorCalc: function that returns the correct color for a given ray
-// returns: Image constructed with color by 'colorCalc'
-def render(camera: Camera) { colorCalc: Ray => Color }: Image = {
-
+def render(camera: Camera): Image / { readColor, random } = {
   var pixels = Nil()
 
-  minstd(1024) {
-    each(0, camera.height) { j =>
-      val line_time = timed {
-        each(0, camera.width) { i =>
-          var pixel_color = vec3::zero()
-          each(0, camera.samples_per_pixel) { sample => 
-            val r = camera.get_ray(i, j)
-            pixel_color = pixel_color + withColorCalc { colorCalc } { do color(r) }
-          }
-          pixels = Cons(fromVec3(pixel_color * camera.pixel_sample_scale), pixels)
+  each(0, camera.height) { j =>
+    val line_time = timed {
+      each(0, camera.width) { i =>
+        var pixel_color = vec3::zero()
+        each(0, camera.samples_per_pixel) { _ => 
+          val r = camera.get_ray(i, j)
+          pixel_color = pixel_color + do readColor(r)
         }
+        val pixel = fromVec3(pixel_color * camera.pixel_sample_scale)
+        pixels = Cons(pixel, pixels)
       }
-      
-      println("Line took: " ++ formatMs(line_time) ++ ", remaining " ++ (camera.height - j).show)
     }
+      
+    println("Line took: " ++ formatMs(line_time) ++ ", remaining " ++ (camera.height - j).show)
   }
 
   Image(camera.width, camera.height, pixels.reverse)
+}
+
+def diffuseImage(camera: Camera, world: List[Hittable]): Image / random = {
+  var image = Image(0,0,[])
+  diffuseHandler(world, camera.max_depth) {
+    image = camera.render()
+  }
+  image
 }
 
 def degrees_to_radians(deg: Double): Double = {
