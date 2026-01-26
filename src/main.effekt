@@ -115,8 +115,10 @@ def main(): Unit = {
   
   val camera = camera(width, fov, lookfrom, lookat, vup, aspect_ratio, samples_per_pixel, max_depth)
 
-  val image = camera.diffuseImage(world)
-  image.writeToFile("out.ppm")
+  scatterHandler(world, camera.max_depth) {
+    val image = camera.render()
+    image.writeToFile("out.ppm")
+  }
 
   ()
 }

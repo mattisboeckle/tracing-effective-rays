@@ -165,7 +165,7 @@ def gradient(r: Ray): Color = {
   (1.0 - blendFactor) * Vec3(1.0, 1.0, 1.0) + blendFactor * Vec3(0.5, 0.7, 1.0)
 }
 
-def diffuseHandler(world: List[Hittable], depth: Int) { prog: () => Unit / readColor }: Unit / { random } = {
+def scatterHandler(world: List[Hittable], depth: Int) { prog: () => Unit / readColor }: Unit / { random } = {
   try {
     prog()
   } with readColor { r => 
@@ -181,7 +181,7 @@ def diffuseHandler(world: List[Hittable], depth: Int) { prog: () => Unit / readC
           opt_scatter match {
             case Some((attenuation, scattered)) => {
               var color = vec3::zero()
-              diffuseHandler(world, depth - 1) { color = do readColor(scattered) }
+              scatterHandler(world, depth - 1) { color = do readColor(scattered) }
               resume(attenuation * color)
             }
             case None() => resume(Vec3(0.0, 0.0, 0.0))

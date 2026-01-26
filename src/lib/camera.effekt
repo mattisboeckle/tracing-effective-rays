@@ -72,14 +72,6 @@ def render(camera: Camera): Image / { readColor, random } = {
   Image(camera.width, camera.height, pixels.reverse)
 }
 
-def diffuseImage(camera: Camera, world: List[Hittable]): Image / random = {
-  var image = Image(0,0,[])
-  diffuseHandler(world, camera.max_depth) {
-    image = camera.render()
-  }
-  image
-}
-
 def degrees_to_radians(deg: Double): Double = {
   deg * PI / 180.0
 }
