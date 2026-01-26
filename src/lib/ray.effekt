@@ -80,10 +80,12 @@ type Hittable {
   Sphere(material: Material, center: Vec3, radius: Double)
 }
 
-effect hit(rec: HitRecord): Color
-effect miss(ray: Ray): Color
+interface Raytrace {
+  def hit(rec: HitRecord): Unit
+  def miss(ray: Ray): Unit
+}
 
-def calculateHit(hittable: Hittable, r: Ray, interval: Interval): Color / { hit, miss } = hittable match {
+def calculateHit(hittable: Hittable, r: Ray, interval: Interval): Unit / Raytrace = hittable match {
   case Sphere(material, center, radius) => {
     val oc = center - r.origin
     val a = r.direction.length_squared()
@@ -126,7 +128,7 @@ def calculateHit(hittable: Hittable, r: Ray, interval: Interval): Color / { hit,
   }
 }
 
-def calculateHits(list: List[Hittable], r: Ray, interval: Interval): Color / { hit, miss } = {
+def calculateHits(list: List[Hittable], r: Ray, interval: Interval): Unit / Raytrace = {
   var temp_rec = HitRecord(vec3::zero(), vec3::zero(), 0.0, Lambertian(vec3::zero()), true)
   var hit_anything = false
   var closest_so_far = interval.max
@@ -136,13 +138,17 @@ def calculateHits(list: List[Hittable], r: Ray, interval: Interval): Color / { h
       hittable.calculateHit(r, Interval(interval.min, closest_so_far))
       ()
     }
-    with hit { rec => 
-      hit_anything = true
-      closest_so_far = rec.t
-      temp_rec = rec
-    }
-    with miss { ray =>
-      ()
+    with Raytrace {
+      def hit(rec: HitRecord) = { 
+        hit_anything = true
+        closest_so_far = rec.t
+        temp_rec = rec
+        resume(())
+      }
+
+      def miss(ray: Ray) = {
+        resume(())
+      }
     }
   }}
 
@@ -167,21 +173,24 @@ def diffuseHandler(world: List[Hittable], depth: Int) { prog: () => Unit / readC
       resume(Vec3(1.0,1.0,1.0))
     } else {
       try {
-        resume(world.calculateHits(r, Interval(0.001, 10000.0)))
+        world.calculateHits(r, Interval(0.001, 10000.0))
       }
-      with hit { rec => 
-        val opt_scatter = rec.material.scatter(r, rec)
-        opt_scatter match {
-          case Some((attenuation, scattered)) => {
-            var color = vec3::zero()
-            diffuseHandler(world, depth - 1) { color = do readColor(scattered) }
-            resume(attenuation * color)
+      with Raytrace {
+        def hit(rec: HitRecord) = { 
+          val opt_scatter = rec.material.scatter(r, rec)
+          opt_scatter match {
+            case Some((attenuation, scattered)) => {
+              var color = vec3::zero()
+              diffuseHandler(world, depth - 1) { color = do readColor(scattered) }
+              resume(attenuation * color)
+            }
+            case None() => resume(Vec3(0.0, 0.0, 0.0))
           }
-          case None() => resume(Vec3(0.0, 0.0, 0.0))
         }
-      }
-      with miss { ray => 
-        resume(gradient(r))
+
+        def miss(ray: Ray) = { 
+          resume(gradient(r))
+        }
       }
     }
   }
