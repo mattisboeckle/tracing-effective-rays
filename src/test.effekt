@@ -4,9 +4,11 @@ import test
 import src/lib
 
 import src/test/vec3_test
+import src/test/integration_test
 
 def main() = mainSuite("lib") {
   vec3_tests()
+  integration_tests()
 
   ()
 }

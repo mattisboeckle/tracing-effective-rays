@@ -1,0 +1,41 @@
+module src/test/integration_test
+
+import src/lib/vec3
+import src/lib/camera
+import src/lib/ray
+import src/main
+
+import random
+
+import test
+
+def integration_tests() = suite("integration") {
+
+  val world: List[Hittable] = [Sphere(Lambertian(Vec3(1.0, 0.0, 0.0)), Vec3(0.0, 0.0, 0.0), 5.0)]
+  val width = 200
+  val samples_per_pixel = 4
+
+  val fov = 20.0
+  val lookfrom = Vec3(13.0, 2.0, 3.0)
+  val lookat = Vec3(0.0, 0.0, 0.0)
+  val vup = Vec3(0.0, 1.0, 0.0)
+  val aspect_ratio = 16.0 / 9.0
+  
+  val camera = camera(width, fov, lookfrom, lookat, vup, aspect_ratio, samples_per_pixel)
+
+  test("gradient") {
+    with minstd(124)
+    with linearGradient(Vec3(1.0, 0.0, 0.0), Vec3(0.0, 1.0, 0.0))
+    camera.render()
+    assertTrue(true)
+  }
+
+  test("ray trace") {
+    val max_depth = 1
+    with minstd(123)
+    with scatterRays(world, max_depth)
+    camera.render()
+    assertTrue(true)
+  }
+
+}
