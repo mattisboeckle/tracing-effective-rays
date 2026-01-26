@@ -1,13 +1,8 @@
-# Effekt Template
-
-> [!WARNING]
-> This is a work-in-progress, feel free to contribute!
-
-This template provides a starting point for Effekt projects.
-
 ## Table of contents
 
-- [First steps](#first-steps)
+- [Overview](#overview)
+  - [Example renders](#example-renders)
+- [Installation](#installation)
 - [Useful commands](#useful-commands)
   - [Effekt commands](#effekt-commands)
   - [Nix-related commands](#nix-related-commands)
@@ -17,26 +12,30 @@ This template provides a starting point for Effekt projects.
 
 ---
 
-## First steps
+## Overview
 
-After using this template, follow these steps to set up your project:
+This project is part of the "Effective programming with Effect" course at the University of Tuebingen.
+The aim of this project was to implement a simple raytracer based on [_Ray Tracing in One Weekend_](https://raytracing.github.io/books/RayTracingInOneWeekend.html) in the Effekt programming language.
 
-1. Set up your development environment:
-   - Clone this repository locally.
-   - Open it in VSCode.
-   - Install the Effekt VSCode extension offered in the pop-up in the bottom right.
+"src/main.effekt" contains the scene, camera & rendering parameters that can be customized. The program will render an image based on the parameters and produce an image at "out.ppm".
 
-2. Customize the project:
-   - Open `flake.nix` and update the project name and other relevant values (follow the comments).
-   - Push your `flake.nix` file after the changes and see if the CI agrees.
+### Example renders
 
-3. Set-up auto-update CI in order to get weekly PRs on Tuesday which update the Effekt version in CI:
-   - Go to Settings -> Actions -> General:
-     - and set "Workflow permissions" to "Read and write permissions"
-     - and check "Allow GitHub Actions to create and approve pull requests"    
-   - See the [CI](#ci) section for more details
+<div style="display: grid; grid-template-columns: 32% 32% 32%; column-gap: 5px; text-align: center;">
+   <img src="example-renders/final_10_2.jpg">
+   <img src="example-renders/final_50_5.jpg">
+   <img src="example-renders/final_100_10.jpg">
+   <p>10 samples, 2 bounces</p>
+   <p>50 samples, 5 bounces</p>
+   <p>100 samples, 10 bounces</p>
+</div>
 
-3. Replace this `README` with your own!
+![Hollow glass](example-renders/hollow-glass.jpg)
+![Two Metal](example-renders/two-metal.jpg)
+
+## Installation
+
+Only requires the Effekt language https://effekt-lang.org/docs to be installed with at least one working backend. LLVM is recommended.
 
 ## Useful commands
 
@@ -47,7 +46,9 @@ Run the main file:
 effekt src/main.effekt
 ```
 This (like many other Effekt commands) uses the JavaScript backend by default.
-To use a different backend, add the `--backend <backend>` flag.
+To use a different backend, add the `--backend <backend>` flag. 
+The LLVM backend `--backend llvm` is recommended for speed, but all backends that support writing files should be supported.
+Only LLVM and JavaScript have been tested.
 
 Run the tests:
 ```sh
@@ -105,7 +106,7 @@ nix build
 - `src/`: Contains the source code
   - `main.effekt`: Main entry point
   - `test.effekt`: Entry point for tests
-  - `lib.effekt`: Library code imported by `main` and `test`
+  - `lib/`: Library code imported by `main` and `test`
 - `flake.nix`: Package configuration in a Nix flake
 - `flake.lock`: Auto-generated lockfile for dependencies
 - `LICENSE`: Project license
