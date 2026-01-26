@@ -165,24 +165,70 @@ def gradient(r: Ray): Color = {
   (1.0 - blendFactor) * Vec3(1.0, 1.0, 1.0) + blendFactor * Vec3(0.5, 0.7, 1.0)
 }
 
-def scatterHandler(world: List[Hittable], depth: Int) { prog: () => Unit / readColor }: Unit / { random } = {
-  try {
-    prog()
-  } with readColor { r => 
+// ---------------------
+//    Example handlers
+// ---------------------
+
+def constantColor(color: Vec3) { prog: () => Unit / readColor } = {
+  try { prog() }
+  with readColor { _ => 
+    resume(color)
+  }
+}
+
+// Returns a gradient from a to b, based on where the ray lands
+def linearGradient(colorA: Color, colorB: Color) { prog: () => Unit / readColor } = {
+  try { prog() }
+  with readColor { r => 
+    val unit_direction = r.direction.unit_vector
+    val blendFactor = 0.5 * (unit_direction.y + 1.0)
+    resume((1.0 - blendFactor) * colorA + blendFactor * colorB)
+  }
+}
+
+def randomColor(seed: Int) { prog: () => Unit / readColor } = {
+  with minstd(seed)
+  try { prog() }
+  with readColor { _ => 
+    resume(vec3::random())
+  }
+}
+
+// Consumes the scattered ray and only returns the attenuation of the material
+def noBounce(world: List[Hittable]) { prog: () => Unit / readColor } = {
+  try { prog() }
+  with readColor { r => 
+    try {
+      world.calculateHits(r, Interval(0.001, 10000.0))
+    } with Raytrace {
+      def hit(rec: HitRecord) = { 
+        rec.material.scatter(r, rec) match {
+          case Some((attenuation, _)) => resume(attenuation)
+          case None() => resume(Vec3(0.0, 0.0, 0.0))
+        }
+      }
+
+      def miss(ray: Ray) = { 
+        resume(gradient(r))
+      }
+    }
+  }
+}
+
+// The "normal" raytracing handler, does recursive rays based on the material scattering
+def scatterRays(world: List[Hittable], depth: Int) { prog: () => Unit / readColor }: Unit / { random } = {
+  try { prog() } 
+  with readColor { r => 
     if (depth <= 0) {
-      resume(Vec3(1.0,1.0,1.0))
+      resume(Vec3(1.0, 1.0, 1.0))
     } else {
       try {
         world.calculateHits(r, Interval(0.001, 10000.0))
-      }
-      with Raytrace {
+      } with Raytrace {
         def hit(rec: HitRecord) = { 
-          val opt_scatter = rec.material.scatter(r, rec)
-          opt_scatter match {
+          rec.material.scatter(r, rec) match {
             case Some((attenuation, scattered)) => {
-              var color = vec3::zero()
-              scatterHandler(world, depth - 1) { color = do readColor(scattered) }
-              resume(attenuation * color)
+              scatterRays(world, depth - 1) { resume(attenuation * do readColor(scattered)) }
             }
             case None() => resume(Vec3(0.0, 0.0, 0.0))
           }

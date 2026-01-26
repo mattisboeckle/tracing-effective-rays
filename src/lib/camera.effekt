@@ -10,11 +10,11 @@ import src/lib/ppm
 
 record Camera(
   width: Int, height: Int, aspect_ratio: Double, 
-  samples_per_pixel: Int, pixel_sample_scale: Double, max_depth: Int,
+  samples_per_pixel: Int, pixel_sample_scale: Double,
   center: Vec3, pixel00: Vec3, pixel_du: Vec3, pixel_dv: Vec3,
   u: Vec3, v: Vec3, w: Vec3)
 
-def camera(width: Int, fov: Double, lookfrom: Vec3, lookat: Vec3, vup: Vec3, aspect_ratio: Double, samples_per_pixel: Int, max_depth: Int): Camera = {
+def camera(width: Int, fov: Double, lookfrom: Vec3, lookat: Vec3, vup: Vec3, aspect_ratio: Double, samples_per_pixel: Int): Camera = {
   // Image
   val image_width = width
   val image_height = (image_width.toDouble / aspect_ratio).toInt
@@ -44,7 +44,7 @@ def camera(width: Int, fov: Double, lookfrom: Vec3, lookat: Vec3, vup: Vec3, asp
   val pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v)
 
   Camera(image_width, image_height, aspect_ratio, 
-    samples_per_pixel, pixel_sample_scale, max_depth,
+    samples_per_pixel, pixel_sample_scale,
     center, pixel00_loc, pixel_delta_u, pixel_delta_v,
     u, v, w  
   )
